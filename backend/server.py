@@ -64,6 +64,182 @@ class AlphaVantageService:
     def __init__(self):
         self.api_key = os.getenv("ALPHA_VANTAGE_API_KEY")
         self.base_url = "https://www.alphavantage.co/query"
+        self.use_mock = False  # Flag to use mock data when API is rate limited
+    
+    def get_mock_quote(self, symbol: str):
+        """Return mock stock quote data"""
+        mock_quotes = {
+            "AAPL": {
+                "Global Quote": {
+                    "01. symbol": "AAPL",
+                    "05. price": "175.43",
+                    "09. change": "2.31",
+                    "10. change percent": "1.33%",
+                    "06. volume": "45678901",
+                    "03. high": "177.21",
+                    "04. low": "173.89",
+                    "02. open": "174.12",
+                    "08. previous close": "173.12",
+                    "07. latest trading day": datetime.now().strftime('%Y-%m-%d')
+                }
+            },
+            "MSFT": {
+                "Global Quote": {
+                    "01. symbol": "MSFT",
+                    "05. price": "432.81",
+                    "09. change": "-3.42",
+                    "10. change percent": "-0.78%",
+                    "06. volume": "32145678",
+                    "03. high": "436.23",
+                    "04. low": "431.45",
+                    "02. open": "435.67",
+                    "08. previous close": "436.23",
+                    "07. latest trading day": datetime.now().strftime('%Y-%m-%d')
+                }
+            },
+            "GOOGL": {
+                "Global Quote": {
+                    "01. symbol": "GOOGL",
+                    "05. price": "185.92",
+                    "09. change": "4.67",
+                    "10. change percent": "2.58%",
+                    "06. volume": "28934567",
+                    "03. high": "187.34",
+                    "04. low": "183.21",
+                    "02. open": "184.56",
+                    "08. previous close": "181.25",
+                    "07. latest trading day": datetime.now().strftime('%Y-%m-%d')
+                }
+            },
+            "TSLA": {
+                "Global Quote": {
+                    "01. symbol": "TSLA",
+                    "05. price": "238.45",
+                    "09. change": "-12.67",
+                    "10. change percent": "-5.05%",
+                    "06. volume": "87654321",
+                    "03. high": "251.23",
+                    "04. low": "236.78",
+                    "02. open": "250.12",
+                    "08. previous close": "251.12",
+                    "07. latest trading day": datetime.now().strftime('%Y-%m-%d')
+                }
+            }
+        }
+        return mock_quotes.get(symbol.upper(), mock_quotes["AAPL"])
+    
+    def get_mock_historical_data(self, symbol: str):
+        """Return mock historical data for ML training"""
+        base_price = {"AAPL": 175, "MSFT": 433, "GOOGL": 186, "TSLA": 238}.get(symbol.upper(), 175)
+        
+        # Generate 100 days of mock historical data
+        historical_data = {}
+        for i in range(100):
+            date = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
+            # Add some realistic price variation
+            variation = np.random.normal(0, base_price * 0.02)
+            price = base_price + variation
+            
+            historical_data[date] = {
+                "1. open": str(round(price * 0.99, 2)),
+                "2. high": str(round(price * 1.02, 2)),
+                "3. low": str(round(price * 0.98, 2)),
+                "4. close": str(round(price, 2)),
+                "5. volume": str(np.random.randint(10000000, 100000000))
+            }
+        
+        return {
+            "Meta Data": {
+                "1. Information": "Daily Prices (open, high, low, close) and Volumes",
+                "2. Symbol": symbol.upper(),
+                "3. Last Refreshed": datetime.now().strftime('%Y-%m-%d'),
+                "4. Output Size": "Full size",
+                "5. Time Zone": "US/Eastern"
+            },
+            "Time Series (Daily)": historical_data
+        }
+    
+    def get_mock_company_overview(self, symbol: str):
+        """Return mock company overview data"""
+        mock_overviews = {
+            "AAPL": {
+                "Symbol": "AAPL",
+                "Name": "Apple Inc",
+                "Sector": "Technology",
+                "Industry": "Consumer Electronics",
+                "MarketCapitalization": "2701234567890",
+                "PERatio": "28.5",
+                "EPS": "6.13",
+                "52WeekHigh": "199.62",
+                "52WeekLow": "164.08",
+                "Description": "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide."
+            },
+            "MSFT": {
+                "Symbol": "MSFT",
+                "Name": "Microsoft Corporation",
+                "Sector": "Technology",
+                "Industry": "Software—Infrastructure", 
+                "MarketCapitalization": "3198765432100",
+                "PERatio": "35.2",
+                "EPS": "12.05",
+                "52WeekHigh": "468.35",
+                "52WeekLow": "362.90",
+                "Description": "Microsoft Corporation develops, licenses, and supports software, services, devices, and solutions worldwide."
+            },
+            "GOOGL": {
+                "Symbol": "GOOGL",
+                "Name": "Alphabet Inc",
+                "Sector": "Technology",
+                "Industry": "Internet Content & Information",
+                "MarketCapitalization": "2267890123456",
+                "PERatio": "22.8",
+                "EPS": "8.15",
+                "52WeekHigh": "193.31",
+                "52WeekLow": "129.40",
+                "Description": "Alphabet Inc. provides various products and platforms in the United States, Europe, the Middle East, Africa, the Asia-Pacific, Canada, and Latin America."
+            },
+            "TSLA": {
+                "Symbol": "TSLA",
+                "Name": "Tesla Inc",
+                "Sector": "Consumer Discretionary",
+                "Industry": "Auto Manufacturers",
+                "MarketCapitalization": "756789012345",
+                "PERatio": "65.3",
+                "EPS": "3.65",
+                "52WeekHigh": "271.99",
+                "52WeekLow": "138.80",
+                "Description": "Tesla, Inc. designs, develops, manufactures, leases, and sells electric vehicles, and energy generation and storage systems in the United States, China, and internationally."
+            }
+        }
+        return mock_overviews.get(symbol.upper(), mock_overviews["AAPL"])
+    
+    def get_mock_market_movers(self):
+        """Return mock market movers data"""
+        return {
+            "metadata": "Top gainers, losers, and most actively traded US tickers",
+            "last_updated": datetime.now().strftime('%Y-%m-%d %H:%M:%S US/Eastern'),
+            "top_gainers": [
+                {"ticker": "NVDA", "price": "145.67", "change_amount": "12.34", "change_percentage": "9.27%", "volume": "98765432"},
+                {"ticker": "AMD", "price": "198.23", "change_amount": "15.67", "change_percentage": "8.59%", "volume": "76543210"},
+                {"ticker": "GOOGL", "price": "185.92", "change_amount": "4.67", "change_percentage": "2.58%", "volume": "28934567"},
+                {"ticker": "AAPL", "price": "175.43", "change_amount": "2.31", "change_percentage": "1.33%", "volume": "45678901"},
+                {"ticker": "META", "price": "592.34", "change_amount": "7.89", "change_percentage": "1.35%", "volume": "23456789"}
+            ],
+            "top_losers": [
+                {"ticker": "TSLA", "price": "238.45", "change_amount": "-12.67", "change_percentage": "-5.05%", "volume": "87654321"},
+                {"ticker": "NFLX", "price": "712.89", "change_amount": "-28.45", "change_percentage": "-3.84%", "volume": "12345678"},
+                {"ticker": "MSFT", "price": "432.81", "change_amount": "-3.42", "change_percentage": "-0.78%", "volume": "32145678"},
+                {"ticker": "AMZN", "price": "178.23", "change_amount": "-2.17", "change_percentage": "-1.20%", "volume": "54321098"},
+                {"ticker": "CRM", "price": "289.45", "change_amount": "-4.56", "change_percentage": "-1.55%", "volume": "19876543"}
+            ],
+            "most_actively_traded": [
+                {"ticker": "NVDA", "price": "145.67", "change_amount": "12.34", "change_percentage": "9.27%", "volume": "198765432"},
+                {"ticker": "TSLA", "price": "238.45", "change_amount": "-12.67", "change_percentage": "-5.05%", "volume": "187654321"},
+                {"ticker": "AAPL", "price": "175.43", "change_amount": "2.31", "change_percentage": "1.33%", "volume": "145678901"},
+                {"ticker": "AMD", "price": "198.23", "change_amount": "15.67", "change_percentage": "8.59%", "volume": "176543210"},
+                {"ticker": "MSFT", "price": "432.81", "change_amount": "-3.42", "change_percentage": "-0.78%", "volume": "132145678"}
+            ]
+        }
     
     async def get_real_time_quote(self, symbol: str):
         cache_key = f"quote:{symbol}"
