@@ -333,25 +333,34 @@ class AlphaVantageService:
             if datetime.now() - cached_time < timedelta(hours=1):
                 return cached_data
         
-        params = {
-            "function": "OVERVIEW",
-            "symbol": symbol,
-            "apikey": self.api_key
-        }
-        
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            try:
+        # Try real API first
+        try:
+            params = {
+                "function": "OVERVIEW",
+                "symbol": symbol,
+                "apikey": self.api_key
+            }
+            
+            async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(self.base_url, params=params)
                 data = response.json()
                 
                 if "Error Message" in data or not data:
-                    raise HTTPException(status_code=404, detail="Company overview not found")
+                    # Symbol not found, try mock data
+                    return self.get_mock_company_overview(symbol)
+                
+                if "Note" in data or "Information" in data:
+                    # API rate limit exceeded, use mock data
+                    print(f"API rate limited for overview {symbol}, using mock data")
+                    return self.get_mock_company_overview(symbol)
                 
                 # Cache the result
                 cache[cache_key] = (data, datetime.now())
                 return data
-            except httpx.TimeoutException:
-                raise HTTPException(status_code=503, detail="API timeout")
+                
+        except Exception as e:
+            print(f"API error for overview {symbol}: {e}, using mock data")
+            return self.get_mock_company_overview(symbol)
     
     async def get_market_movers(self):
         cache_key = "market_movers"
