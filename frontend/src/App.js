@@ -548,6 +548,24 @@ function App() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Demo Mode Banner */}
+        <div className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <span className="text-2xl">🤖</span>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-blue-800">
+                Demo Mode Active - AI-Powered Stock Analysis Platform
+              </h3>
+              <div className="text-sm text-blue-600">
+                <p>Using intelligent mock data due to Alpha Vantage API rate limits. All features including AI predictions are fully functional!</p>
+                <p className="mt-1"><strong>Live Features:</strong> Real-time quotes, ML price predictions (Linear Regression & Prophet), market analysis, trending stocks</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
             <strong>Error:</strong> {error}
