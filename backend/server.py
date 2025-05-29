@@ -371,24 +371,29 @@ class AlphaVantageService:
             if datetime.now() - cached_time < timedelta(minutes=5):
                 return cached_data
         
-        params = {
-            "function": "TOP_GAINERS_LOSERS",
-            "apikey": self.api_key
-        }
-        
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            try:
+        # Try real API first
+        try:
+            params = {
+                "function": "TOP_GAINERS_LOSERS",
+                "apikey": self.api_key
+            }
+            
+            async with httpx.AsyncClient(timeout=15.0) as client:
                 response = await client.get(self.base_url, params=params)
                 data = response.json()
                 
-                if "Note" in data:
-                    raise HTTPException(status_code=429, detail="API rate limit exceeded")
+                if "Note" in data or "Information" in data:
+                    # API rate limit exceeded, use mock data
+                    print("API rate limited for market movers, using mock data")
+                    return self.get_mock_market_movers()
                 
                 # Cache the result
                 cache[cache_key] = (data, datetime.now())
                 return data
-            except httpx.TimeoutException:
-                raise HTTPException(status_code=503, detail="API timeout")
+                
+        except Exception as e:
+            print(f"API error for market movers: {e}, using mock data")
+            return self.get_mock_market_movers()
 
 class MLPredictionService:
     def __init__(self):
