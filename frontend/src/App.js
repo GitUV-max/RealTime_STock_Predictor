@@ -54,7 +54,20 @@ function App() {
 
   const fetchPrediction = async (stockSymbol, modelType, days) => {
     try {
-      const data = await fetchWithErrorHandling(`${API_BASE_URL}/api/predict/${stockSymbol}?model_type=${modelType}&days_ahead=${days}`);
+      const url = `${API_BASE_URL}/api/predict/${stockSymbol}?model_type=${modelType}&days_ahead=${days}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.detail || 'Prediction request failed');
+      }
+      
       return data.data;
     } catch (error) {
       throw error;
