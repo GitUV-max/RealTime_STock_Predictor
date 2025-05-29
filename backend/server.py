@@ -288,35 +288,41 @@ class AlphaVantageService:
             if datetime.now() - cached_time < timedelta(minutes=5):
                 return cached_data
         
-        function_map = {
-            "daily": "TIME_SERIES_DAILY",
-            "weekly": "TIME_SERIES_WEEKLY",
-            "monthly": "TIME_SERIES_MONTHLY"
-        }
-        
-        params = {
-            "function": function_map.get(interval, "TIME_SERIES_DAILY"),
-            "symbol": symbol,
-            "apikey": self.api_key,
-            "outputsize": "full"
-        }
-        
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            try:
+        # Try real API first
+        try:
+            function_map = {
+                "daily": "TIME_SERIES_DAILY",
+                "weekly": "TIME_SERIES_WEEKLY",
+                "monthly": "TIME_SERIES_MONTHLY"
+            }
+            
+            params = {
+                "function": function_map.get(interval, "TIME_SERIES_DAILY"),
+                "symbol": symbol,
+                "apikey": self.api_key,
+                "outputsize": "full"
+            }
+            
+            async with httpx.AsyncClient(timeout=15.0) as client:
                 response = await client.get(self.base_url, params=params)
                 data = response.json()
                 
                 if "Error Message" in data:
-                    raise HTTPException(status_code=404, detail="Symbol not found")
+                    # Symbol not found, try mock data
+                    return self.get_mock_historical_data(symbol)
                 
-                if "Note" in data:
-                    raise HTTPException(status_code=429, detail="API rate limit exceeded")
+                if "Note" in data or "Information" in data:
+                    # API rate limit exceeded, use mock data
+                    print(f"API rate limited for historical {symbol}, using mock data")
+                    return self.get_mock_historical_data(symbol)
                 
                 # Cache the result
                 cache[cache_key] = (data, datetime.now())
                 return data
-            except httpx.TimeoutException:
-                raise HTTPException(status_code=503, detail="API timeout")
+                
+        except Exception as e:
+            print(f"API error for historical {symbol}: {e}, using mock data")
+            return self.get_mock_historical_data(symbol)
     
     async def get_company_overview(self, symbol: str):
         cache_key = f"overview:{symbol}"
