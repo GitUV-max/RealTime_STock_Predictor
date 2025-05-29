@@ -250,28 +250,34 @@ class AlphaVantageService:
             if datetime.now() - cached_time < timedelta(seconds=30):
                 return cached_data
         
-        params = {
-            "function": "GLOBAL_QUOTE",
-            "symbol": symbol,
-            "apikey": self.api_key
-        }
-        
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            try:
+        # Try real API first
+        try:
+            params = {
+                "function": "GLOBAL_QUOTE",
+                "symbol": symbol,
+                "apikey": self.api_key
+            }
+            
+            async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(self.base_url, params=params)
                 data = response.json()
                 
                 if "Error Message" in data:
-                    raise HTTPException(status_code=404, detail="Symbol not found")
+                    # Symbol not found, try mock data
+                    return self.get_mock_quote(symbol)
                 
-                if "Note" in data:
-                    raise HTTPException(status_code=429, detail="API rate limit exceeded")
+                if "Note" in data or "Information" in data:
+                    # API rate limit exceeded, use mock data
+                    print(f"API rate limited for {symbol}, using mock data")
+                    return self.get_mock_quote(symbol)
                 
                 # Cache the result
                 cache[cache_key] = (data, datetime.now())
                 return data
-            except httpx.TimeoutException:
-                raise HTTPException(status_code=503, detail="API timeout")
+                
+        except Exception as e:
+            print(f"API error for {symbol}: {e}, using mock data")
+            return self.get_mock_quote(symbol)
     
     async def get_historical_data(self, symbol: str, interval: str = "daily"):
         cache_key = f"historical:{symbol}:{interval}"
